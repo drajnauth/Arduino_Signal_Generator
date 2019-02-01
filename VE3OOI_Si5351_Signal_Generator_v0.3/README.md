@@ -1,17 +1,10 @@
 # Arduino_Signal_Generator
-Peel Amateur Radio Club Arduino program for the Signal Generator that will be built at the 2019 Spring Builathon.  Its the first release that uses the following libraries:
+This is the original Arduino programs that allows manipulation of the Si5351 to produce a poor man's Sig Gen.  It support a nano connected to a 4x20 LCD with a single push button and rotary encoder. 
 
-1) NT7S EtherKit Arduino Library: https://github.com/etherkit/Si5351Arduino
-
-2) duinoWitchery hd44780 LCD Library: https://github.com/duinoWitchery/hd44780
-
-The NT7S library has limitation and faciliates the setting 3 independant frequencies on each Si5351 CLK output as well as provides quadature output between frequencies of 5 MHz to 60 Mhz.  These are hardcoded limits.  The library supports close to 100 Mhz.  The library appears to be stable between 4 Mhz to 114 Mhz.  
-
-
+Its a work in progress and there are a few improvements and a few bugs to be fixed. There are known issues with the debouncing of the rotaty encoder and push buttons. As well the Si5351 software does not support frequenies above 114 Mhz.  Special things needs to be done to support higher frequencies.  Subequent work has been compeleted and the software not support 2 Khz to 200 Mhz.  Caveat emptor.
 
 Videos available from my YouTube Channel: 
 http://www.youtube.com/c/DaveVE3OOI 
-
 
 
 Dave, VE300I
