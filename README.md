@@ -12,7 +12,7 @@ There are three version of the Sig Gen software here:
 
 2) Interim release of the 40x4 LCD PARC SNA: "PARC_Si5351_Signal_Generator_E_v0.1a. Needs the "hd44780" LCD Library and the "Etherkit_Si5351-2.1.2" Si5351 library.  Limited functionality.
 
-3) The 40x4 LCD PARC pre-release of the Sig Gen "PARC_Si5351_Signal_Generator_A_v0.1b". Needs the "hd44780" LCD Library 
+3) The 40x4 LCD PARC pre-release of the Sig Gen: "PARC_Si5351_Signal_Generator_A_v0.1b". Needs the "hd44780" LCD Library 
 
 
 Dave, VE300I
