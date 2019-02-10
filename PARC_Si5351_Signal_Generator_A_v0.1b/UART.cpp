@@ -30,17 +30,23 @@ extern char prompt[6];
 extern char ovflmsg[9];
 extern char errmsg[4];
 
+void FlushSerialInput (void) 
+{
+  while (Serial.available() > 0) Serial.read();
+}
+
 void ResetSerial (void) 
 // This routine is used to flush all serial input output and zero out all serial buffers
 {
   Serial.flush();
+  FlushSerialInput();
   memset(rbuff,0,sizeof(rbuff));
   memset(numbers,0,sizeof(numbers));
   memset(commands,0,sizeof(commands));
   ctr = 0;
 }
 
-char ProcessSerial ( void ) 
+void ProcessSerial ( void ) 
 // This routing is called to check is there is serial input and store the input into the serial buffer
 // if a CR/LF (Enter pressed) is received, then process the command and flush the buffer.
 {

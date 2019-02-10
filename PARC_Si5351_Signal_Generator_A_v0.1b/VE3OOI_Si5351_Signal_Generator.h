@@ -2,6 +2,7 @@
 #define _MAIN_H_
 
 //#define REMOVE_CLI
+#define ENABLE_SWAP_VFO
 
 typedef struct {
   unsigned long flags;
@@ -28,6 +29,7 @@ typedef struct {
 #define CALIBRATION_MODE      0x40
 #define MEMORY_SAVE_MODE      0x80
 #define MEMORY_RECALL_MODE    0x100
+#define CLI_MODE              0x200
 
 #define ROTARY_CW             0x1000
 #define ROTARY_CCW            0x2000
@@ -36,16 +38,12 @@ typedef struct {
 #define PBUTTON2_PUSHED       0x10000
 #define DISABLE_BUTTONS       0x20000
 
-#define PLLA_RUNNING          0x100000
-#define PLLB_RUNNING          0x200000
 #define MASTER_RESET          0x10000000
 
 #define MAX_MESSAGES 2
 #define MAX_MEMORIES 4
 #define AUTOSAVE_MEMORY_MS 2000
 
-#define MAXMENU_ITEMS 8
-#define MAXMENU_LEN 12
 #define MAXCLK 3
 
 // Mesages
@@ -85,6 +83,9 @@ typedef struct {
 #define MINIMUM_OFFSET_FREQUENCY 100000
 
 // Menu Options
+#define MAXMENU_ITEMS 9
+#define MAXMENU_LEN 12
+
 #define VFO_ENABLE 0
 #define LO_ENABLE 1
 #define IQ_ENABLE 2
@@ -92,7 +93,8 @@ typedef struct {
 #define CALIBRATE 4
 #define SAVE 5
 #define RECALL 6
-#define RESET 7
+#define CLI_ENABLE 7
+#define RESET 8
 
 void ExecuteSerial (char *str);
 void Reset (void);

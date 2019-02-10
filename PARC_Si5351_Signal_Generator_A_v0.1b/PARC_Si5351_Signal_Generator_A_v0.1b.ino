@@ -63,6 +63,7 @@ char RootMenuOptions[MAXMENU_ITEMS][MAXMENU_LEN] = {
   {"CALIBRATE "},
   {"SAVE      "},
   {"RECALL    "},
+  {"CLI ENABLE"},
   {"RESET     "}
 };
 
@@ -89,7 +90,7 @@ Sig_Gen_Struct mem[MAX_MEMORIES];
 // the setup function runs once when you press reset or power the board
 void setup() {
   // define the baud rate for TTY communications. Note CR and LF must be sent by terminal program
-  Serial.begin(115200);
+  Serial.begin(9600);
 
   SetupLCD ();
   
@@ -122,38 +123,47 @@ void loop()
 #ifndef REMOVE_CLI
   // Look for characters entered from the keyboard and process them
   // This function is part of the UART package.
-  ProcessSerial ();
+  if (flags & CLI_MODE) {
+    ProcessSerial ();
+  }
 #endif // REMOVE_CLI
-
-
 
   if (flags & MASTER_RESET) {
     Reset();
   }
+  
+  if (!(flags & CLI_MODE) ) {
+    if (flags & MENU_MODE) {
+      MenuDisplayMode();
 
-  if (flags & MENU_MODE) {
-    MenuDisplayMode();
+    } else if (flags & CLOCK_WINDOW_MODE) {
+      MenuClockWindowMode();
 
-  } else if (flags & CLOCK_WINDOW_MODE) {
-    MenuClockWindowMode();
+    } else if (flags & CLOCK_FREQUENCY_MODE) {
+      MenuClockFrequencyMode();
 
-  } else if (flags & CLOCK_FREQUENCY_MODE) {
-    MenuClockFrequencyMode();
+    } else if (flags & IQ_FREQUENCY_MODE) {
+      MenuIQClockFrequencyMode();
 
-  } else if (flags & IQ_FREQUENCY_MODE) {
-    MenuIQClockFrequencyMode();
-
-  } else if (flags & OFFSET_FREQUENCY_MODE) {
-    MenuClockFrequencyOffsetMode();
+    } else if (flags & OFFSET_FREQUENCY_MODE) {
+      MenuClockFrequencyOffsetMode();
     
-  } else if (flags & CALIBRATION_MODE) {
-    GetRotaryNumber (-500, 500, 100, 11, 3);
+    } else if (flags & CALIBRATION_MODE) {
+      GetRotaryNumber (-500, 500, 100, 11, 3);
 
-  } else if (flags & MEMORY_SAVE_MODE) {
-    GetRotaryNumber (0, (MAX_MEMORIES-1), 1, 11, 3);
+    } else if (flags & MEMORY_SAVE_MODE) {
+      GetRotaryNumber (0, (MAX_MEMORIES-1), 1, 11, 3);
 
-  } else if (flags & MEMORY_RECALL_MODE) {
-    GetRotaryNumber (0, (MAX_MEMORIES-1), 1, 11, 3);
+    } else if (flags & MEMORY_RECALL_MODE) {
+      GetRotaryNumber (0, (MAX_MEMORIES-1), 1, 11, 3);
+    }
+    
+  } else {
+    flags &= ~ROTARY_CW;
+    flags &= ~ROTARY_CCW;
+    flags &= ~PBUTTON1_PUSHED;
+    flags &= ~PBUTTON2_PUSHED;
+    digitalWrite(LED_BUILTIN, LOW);
   }
 
 
@@ -186,8 +196,6 @@ void GetRotaryNumber (int lnum, int hnum, int maxinc, unsigned char x, unsigned 
       LCDDisplayNumber3D (rotaryNumber, x, y);
       LCDSelectLine (pos, y, 1);
       setupSi5351 (rotaryNumber);
-      flags &= ~PLLA_RUNNING;
-      flags &= ~PLLB_RUNNING;
       UpdateFrequency (0);
       UpdateFrequency (1);
       UpdateFrequency (2);
@@ -231,7 +239,7 @@ void GetRotaryNumber (int lnum, int hnum, int maxinc, unsigned char x, unsigned 
         LCDClearErrorMsg(10);
         RefreshLCD();
       } else {
-        LCDErrorMsg(11, "MEM ERR");
+        LCDErrorMsg(11, (char *)"MEM ERR");
         delay (3000);
         LCDClearErrorMsg(10);
       }
@@ -472,6 +480,74 @@ void MenuClockFrequencyOffsetMode (void)
 
 }
 
+void MenuClockWindowMode ()
+{
+  unsigned char pos;
+
+  if (flags & ROTARY_CW) {
+    if (++ClkSelection >= MAXCLK) ClkSelection = 0;
+
+  } else if (flags & ROTARY_CCW) {
+    if (!ClkSelection) ClkSelection = MAXCLK - 1;
+    else ClkSelection--;
+  }
+
+  if ( (flags & ROTARY_CW) || (flags & ROTARY_CCW) ) {
+    flags &= ~ROTARY_CW;
+    flags &= ~ROTARY_CCW;
+    LCDSelectLine(0, ClkSelection, 1);
+    digitalWrite(LED_BUILTIN, LOW);
+  }
+
+  if (flags & ROTARY_PUSH) {
+    
+#ifdef ENABLE_SWAP_VFO
+    // Swap CLK2 and CLK2
+    if ( (ClkSelection == 0 || ClkSelection == 2) && sg.ClkStatus[0] && sg.ClkStatus[2]) {
+      frequency_clk = sg.ClkFreq[0]; 
+      sg.ClkFreq[0] = sg.ClkFreq[2]; 
+      sg.ClkFreq[2] = frequency_clk; 
+      LCDDisplayClockEntry(0);
+      LCDDisplayClockEntry(2);
+      UpdateFrequency (0);
+      UpdateFrequency (2);      
+      LCDSelectLine(0, ClkSelection, 1);
+    }
+#endif // ENABLE_SWAP_VFO
+
+    flags &= ~ROTARY_PUSH;
+  }
+
+  if (flags & PBUTTON1_PUSHED) {
+    if (sg.ClkStatus[ClkSelection]) {
+      sg.ClkStatus[ClkSelection] = 0;
+      LCDDisplayClockStatus(ClkSelection);
+      LCDSelectLine(0, ClkSelection, 1);
+      DisableFrequency(ClkSelection);
+
+    } else {
+      sg.ClkStatus[ClkSelection] = 1;
+      LCDDisplayClockStatus(ClkSelection);
+      pos = FrequencyDigitUpdate(frequency_inc) + FREQUENCY_DISPLAY_SHIFT;
+      LCDSelectLine (pos, ClkSelection, 1);
+      EnableFrequency(ClkSelection);
+      flags &= ~CLOCK_WINDOW_MODE;
+      flags |= CLOCK_FREQUENCY_MODE;
+    }
+    flags &= ~PBUTTON1_PUSHED;
+  }
+
+  if (flags & PBUTTON2_PUSHED) {
+    LCDSelectLine(0, ClkSelection, 0);
+    ClearFlags();
+    flags |= MENU_MODE;
+    LCDSelectLine(0, 3, 1);
+    flags &= ~PBUTTON2_PUSHED;
+  }
+
+}
+
+
 
 void MenuDisplayMode ()
 {
@@ -509,59 +585,6 @@ void MenuDisplayMode ()
 
   if (flags & PBUTTON2_PUSHED) {
     DoMenu();
-    flags &= ~PBUTTON2_PUSHED;
-  }
-
-}
-
-void MenuClockWindowMode ()
-{
-  unsigned char pos;
-
-
-  if (flags & ROTARY_CW) {
-    if (++ClkSelection >= MAXCLK) ClkSelection = 0;
-
-  } else if (flags & ROTARY_CCW) {
-    if (!ClkSelection) ClkSelection = MAXCLK - 1;
-    else ClkSelection--;
-  }
-
-  if ( (flags & ROTARY_CW) || (flags & ROTARY_CCW) ) {
-    flags &= ~ROTARY_CW;
-    flags &= ~ROTARY_CCW;
-    LCDSelectLine(0, ClkSelection, 1);
-    digitalWrite(LED_BUILTIN, LOW);
-  }
-
-  if (flags & ROTARY_PUSH) {
-    flags &= ~ROTARY_PUSH;
-  }
-
-  if (flags & PBUTTON1_PUSHED) {
-    if (sg.ClkStatus[ClkSelection]) {
-      sg.ClkStatus[ClkSelection] = 0;
-      LCDDisplayClockStatus(ClkSelection);
-      LCDSelectLine(0, ClkSelection, 1);
-      DisableFrequency(ClkSelection);
-
-    } else {
-      sg.ClkStatus[ClkSelection] = 1;
-      LCDDisplayClockStatus(ClkSelection);
-      pos = FrequencyDigitUpdate(frequency_inc) + FREQUENCY_DISPLAY_SHIFT;
-      LCDSelectLine (pos, ClkSelection, 1);
-      EnableFrequency(ClkSelection);
-      flags &= ~CLOCK_WINDOW_MODE;
-      flags |= CLOCK_FREQUENCY_MODE;
-    }
-    flags &= ~PBUTTON1_PUSHED;
-  }
-
-  if (flags & PBUTTON2_PUSHED) {
-    LCDSelectLine(0, ClkSelection, 0);
-    ClearFlags();
-    flags |= MENU_MODE;
-    LCDSelectLine(0, 3, 1);
     flags &= ~PBUTTON2_PUSHED;
   }
 
@@ -732,6 +755,26 @@ void DoMenu(void)
       LCDSelectLine (11, 3, 1);
       break;
 
+    case CLI_ENABLE:
+
+#ifndef REMOVE_CLI
+      ResetSi5351();
+      LCDDisplayHeader();
+      FlushSerialInput();
+      Serial.print (header1);
+      Serial.println (header2);
+      Serial.write (prompt);
+      Serial.flush();
+      ClearFlags();
+      flags |= CLI_MODE;
+      flags |= DISABLE_BUTTONS;
+#else 
+      LCDErrorMsg(11, "ERROR");
+      delay (3000);
+      LCDClearErrorMsg(11);   
+#endif //REMOVE_CLI
+      break;
+
     case RESET:
       Reset();
       return;
@@ -751,6 +794,7 @@ void ClearFlags ()
   flags &= ~CLOCK_FREQUENCY_MODE;
   flags &= ~LO_FREQUENCY_MODE;
   flags &= ~IQ_FREQUENCY_MODE;
+  flags &= ~CLI_MODE;
   
 }
 
@@ -921,9 +965,10 @@ void Reset (void)
 {
   
 #ifndef REMOVE_CLI
+  ResetSerial();
   Serial.print (header1);
   Serial.println (header2);
-  Serial.write (prompt);
+//  Serial.write (prompt);
   Serial.flush();
 #endif // REMOVE_CLI
 
@@ -1091,7 +1136,7 @@ void ExecuteSerial (char *str)
 
     // Phase controls
     case 'P':
-      if (numbers[0] > 2UL || numbers[0] < 0UL  ){
+      if (numbers[0] > 2UL){
         Serial.println ("Bad CLK");
         return;
       }
@@ -1150,7 +1195,7 @@ void printMem (unsigned char i)
     Serial.println (rbuff);
     memset(rbuff,0,sizeof(rbuff));
   } else {
-    Serial.println ("MEM ERR");
+    Serial.println ((char *)"MEM ERR");
   }
 
 }

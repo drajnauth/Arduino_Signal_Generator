@@ -7,11 +7,10 @@
 #define MAX_COMMAND_ENTRIES 6 
 
 
-
-
-char ProcessSerial ( void );
+void ProcessSerial ( void );
 unsigned char ParseSerial ( char *str );
 void ResetSerial (void);
 void ErrorOut ( void );
+void FlushSerialInput (void);
 
 #endif // _UART_H_
