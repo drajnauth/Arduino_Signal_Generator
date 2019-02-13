@@ -289,7 +289,7 @@ void MenuClockFrequencyMode (void)
     }
 
   } else if (flags & ROTARY_CCW) {
-    temp = sg.ClkFreq[ClkSelection] - frequency_inc;
+    temp = (long)sg.ClkFreq[ClkSelection] - (long)frequency_inc;
     if (temp < (long)LowFrequencyLimit(ClkSelection) || temp < 0) {
       sg.ClkFreq[ClkSelection] = LowFrequencyLimit(ClkSelection);
       pos = FrequencyDigitUpdate(frequency_inc) + FREQUENCY_DISPLAY_SHIFT;
@@ -364,7 +364,7 @@ void MenuIQClockFrequencyMode (void)
     }
 
   } else if (flags & ROTARY_CCW) {
-    temp = sg.IQClkFreq[ClkSelection] - frequency_inc;
+    temp = (long)sg.IQClkFreq[ClkSelection] - (long)frequency_inc;
     if (temp < (long)LowFrequencyLimit(ClkSelection) || temp < 0) {
       sg.IQClkFreq[ClkSelection] = LowFrequencyLimit(ClkSelection);
       pos = FrequencyDigitUpdate(frequency_inc) + FREQUENCY_DISPLAY_SHIFT;
@@ -1068,23 +1068,28 @@ void ExecuteSerial (char *str)
         Serial.print ("Correction: ");
         Serial.println (sg.correction);
         break;
-      } else if (numbers[0] == 0UL) {
+        
+      } else if (numbers[0] > 500) {
         Serial.println ("Bad Cal");
         break;
+        
       } else if (numbers[1] < SI_MIN_OUT_FREQ || numbers[1] > SI_MAX_OUT_FREQ) {
         Serial.println ("Bad Freq");
         break;
       }
-      
+
       // New value defined so read the old values and display what will be done
       Serial.print ("Old Correction: ");
       Serial.println (sg.correction);
       Serial.print ("New Correction: ");
-      Serial.println (numbers[0]);
+      
+      // Store the new value entered    
+      if (commands[1] == '-') sg.correction = - (int)numbers[0];
+      
+      else sg.correction = (int)numbers[0];
+      Serial.println (sg.correction);
 
-      // Store the new value entered, reset the Si5351 and then display frequency based on new setting     
-      sg.correction = numbers[0];
-  
+      // Reset the Si5351 and then display frequency based on new setting     
       setupSi5351(sg.correction);
       memcpy ((char *)&mem[0], (char *)&sg, sizeof(sg));
       EEPROM.put(0, mem);

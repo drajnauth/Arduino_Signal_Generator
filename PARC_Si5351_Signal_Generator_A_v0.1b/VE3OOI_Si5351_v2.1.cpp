@@ -420,7 +420,8 @@ void ProgramSi5351PLL (unsigned char pll, unsigned long pllfreq)
   MS_a = (unsigned long)accum;
 
   if (MS_a < SI5351_PLL_MULTISYNTH_A_MIN || MS_a > SI5351_PLL_MULTISYNTH_A_MAX) {
-    Serial.print ("PLL DIV ERR");
+    Serial.print ("PLL DIV ERR: ");
+    Serial.println (MS_a);
     return;
   }
   
@@ -505,7 +506,8 @@ void SetIQFrequency (unsigned char clk, unsigned char clk2, unsigned char pll, u
   
   mult = GetPLLFreq(freq);
   if (!mult) {
-    Serial.println ("Phase Err");
+    Serial.print ("Phase Err: ");
+    Serial.println (mult);
     return;
   }
   pllfreq = freq * mult;

@@ -106,7 +106,7 @@ unsigned char CheckSi5351Status (void);
 #define SI5351_PLL_MULTISYNTH_A_MAX     90
 
 #define SI5351_MULTISYNTH_A_MIN         4
-#define SI5351_MULTISYNTH_A_MAX         1800
+#define SI5351_MULTISYNTH_A_MAX         2000    // was 1800
 
 #define SI_MAX_DIVIDER            1048575UL   // Maximum value for C i.e. 20 bits of denomintor and 2^20 = 1048576, which is 0 to 1048575
 
@@ -136,25 +136,22 @@ unsigned char CheckSi5351Status (void);
 #define SI_CRY_FREQ_27MHZ   27000000UL
 
 #define SI_MAX_PLL_FREQ     900000000UL
-#define SI_MIN_PLL_FREQ     600000000UL       // can be 405 000 000
-#define SI_VERY_MIN_PLL_FREQ     405000000UL  // can be 405 000 000
+#define SI_MIN_PLL_FREQ     600000000UL      // default on datasheet
+#define SI_VERY_MIN_PLL_FREQ    380000000UL  // was 405000000
 
 #define SI_MIN_MSRATIO4_FREQ 150000000UL
-#define SI_MAX_MSRATIO4_FREQ 200000000UL
+#define SI_MAX_MSRATIO4_FREQ 225000000UL      // was 200000000
 
 #define SI_MIN_MSRATIO6_FREQ 110000000UL
 #define SI_MAX_MSRATIO6_FREQ 150000000UL
 
-#define SI_MIN_MSRATIO8_FREQ  75000000UL          // was 75000000UL
+#define SI_MIN_MSRATIO8_FREQ  75000000UL
 #define SI_MAX_MSRATIO8_FREQ 110000000UL
 
 #define SI_LOW_FREQ_DIVIDER  1048576UL
 
-#define SI_MAX_OUT_FREQ     200000000UL
-#define SI_MIN_OUT_FREQ     1800UL        // was 2000
-
-#define SI_MAX_IQ_OUT_FREQ     80000000UL
-#define SI_MIN_IQ_OUT_FREQ     3300000UL
+#define SI_MAX_OUT_FREQ     225000000UL   // was 200000000
+#define SI_MIN_OUT_FREQ     1500UL        // was 2000, then was 1800 with MIN_PLL_=405000000, can be 1500 with MIN_PLL_FRQ=380000000
 
 #define SI_MAX_MS_FREQ      150000000UL
 #define SI_MSYN_DIV_4     4
