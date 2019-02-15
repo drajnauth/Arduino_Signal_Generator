@@ -20,17 +20,29 @@
 #include "Encoder.h"
 #include "Timer.h"
 
+//========================================================
+// LCD Library
+// Can use either LiquidCrystal or HD44780 library.
+// define below selects which library to use
+//========================================================
+#define USE_HD44780     // if this is defined, will use the HD44780 libary
+                        // if commented out, will use LiquidCrystal library
+
 // LCD geometry
 const int LCD_COLS = 20;
 const int LCD_ROWS = 4;
 
-//#include <hd44780.h>                        // main hd44780 header
-//#include <hd44780ioClass/hd44780_I2Cexp.h>  // i2c expander i/o class header
-//hd44780_I2Cexp lcd; // declare lcd object: auto locate & auto config expander chip
+#ifdef USE_HD44780
+#include <hd44780.h>                        // main hd44780 header
+#include <hd44780ioClass/hd44780_I2Cexp.h>  // i2c expander i/o class header
+hd44780_I2Cexp lcd; // declare lcd object: auto locate & auto config expander chip
 
-
+#else
 #include <LiquidCrystal_I2C.h>
 LiquidCrystal_I2C lcd(0x3F, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);  // Set the LCD I2C address
+#endif  //USE_HD44780
+//========================================================
+
 
 extern char header1[HEADER1];
 extern char header2[HEADER2];

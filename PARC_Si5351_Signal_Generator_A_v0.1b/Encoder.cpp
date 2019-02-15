@@ -99,7 +99,7 @@ void CheckPushButtons (void)
   if ((mscurrent - pb1time) > PBDEBOUNCE) {
     if (pb1current != pb1state) {
       pb1state = pb1current;
-      if (pb1state == LOW && !(flags & PBUTTON1_PUSHED) ) {
+      if (pb1state == PBUTTON_STATE && !(flags & PBUTTON1_PUSHED) ) {
         flags |= PBUTTON1_PUSHED;
       }
     }
@@ -109,7 +109,7 @@ void CheckPushButtons (void)
   if ((mscurrent - pb2time) > PBDEBOUNCE) {
     if (pb2current != pb2state) {
       pb2state = pb2current;
-      if (!pb2state && !(flags & PBUTTON2_PUSHED) ) {
+      if (pb2state == PBUTTON_STATE && !(flags & PBUTTON2_PUSHED) ) {
         flags |= PBUTTON2_PUSHED;
       }
     }
