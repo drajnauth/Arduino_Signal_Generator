@@ -39,13 +39,9 @@ void SetupEncoder (void)
   pinMode(LED_BUILTIN, OUTPUT);
 
   // Setup Encoder Pins
-  // Setup encoder pins as inputs with pullups
   pinMode(ENC_A, INPUT);            // Rotary A: set at input
-//  digitalWrite(ENC_A, HIGH);        // Enable weak pullups (i.e. grounded when engaged)
   pinMode(ENC_B, INPUT);            // Rotary A: set at input
-//  digitalWrite(ENC_B, HIGH);        // Enable weak pullups (i.e. grounded when engaged)
   pinMode(ENC_PB, INPUT);           // Rotary Push button
-//  digitalWrite(ENC_PB, HIGH);       // Enable weak pullups (i.e. grounded when engaged)
 
   // Push Buttons
   pinMode(PBUTTON1, INPUT);         // Push buttons are input
@@ -100,6 +96,7 @@ void CheckPushButtons (void)
     if (pb1current != pb1state) {
       pb1state = pb1current;
       if (pb1state == PBUTTON_STATE && !(flags & PBUTTON1_PUSHED) ) {
+        digitalWrite(LED_BUILTIN, HIGH);
         flags |= PBUTTON1_PUSHED;
       }
     }
@@ -110,6 +107,7 @@ void CheckPushButtons (void)
     if (pb2current != pb2state) {
       pb2state = pb2current;
       if (pb2state == PBUTTON_STATE && !(flags & PBUTTON2_PUSHED) ) {
+        digitalWrite(LED_BUILTIN, HIGH);
         flags |= PBUTTON2_PUSHED;
       }
     }

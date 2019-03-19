@@ -156,7 +156,7 @@ void LCDDisplayClockMode (unsigned char line)
         break;
         
       case IQ_CLK_MODE:
-        lcd.print ("IQ ");
+        lcd.print (F("IQ "));
         break;
         
 
@@ -228,10 +228,10 @@ void LCDDisplayIQClockFrequency (unsigned char line)
 void LCDDisplayLOClockFrequency (unsigned char line)
 {
     long fq;
-    if (sg.ClkMode[line] == VFO_CLK_MODE) {
-      LCDDisplayClockFrequency(line);
-      return;
-    }
+//    if (sg.ClkMode[line] == VFO_CLK_MODE) {
+//      LCDDisplayClockFrequency(line);
+//      return;
+//    }
     fq = (long)sg.ClkFreq[line] + sg.ClkOffset[line];
     if (fq < 0) fq = 0;
     lcd.setCursor(0,line);

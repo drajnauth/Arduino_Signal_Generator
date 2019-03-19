@@ -44,20 +44,21 @@ volatile unsigned long flags;
 
 // Frequency Control variables
 volatile unsigned long frequency_clk;
+volatile long offset_frequency;
 volatile unsigned long frequency_inc;
 volatile long offset_inc;
 volatile int calibration_mult;
 
 // Calibration and memory slot variable
-int rotaryNumber;
-int rotaryInc;
+volatile int rotaryNumber;
+volatile int rotaryInc;
 
 // LCD Menu
 volatile unsigned char MenuSelection, ClkSelection;
 
 char RootMenuOptions[MAXMENU_ITEMS][MAXMENU_LEN] = {
   {"VFO ENABLE"},
-  {"LO ENABLE "},
+  {"MIX ENABLE"},
   {"I/Q ENABLE"},
   {"SET OFFSET"},
   {"CALIBRATE "},
@@ -67,8 +68,10 @@ char RootMenuOptions[MAXMENU_ITEMS][MAXMENU_LEN] = {
   {"RESET     "}
 };
 
-char header1[HEADER1] = {'P', 'A', 'R', 'C', ' ', 'S', 'I', 'G', ' ', 'G', 'E', 'N', ' ', 'A', '0', '.', '1', 'b', ' ', 0x0};
+char header1[HEADER1] = {'P', 'A', 'R', 'C', ' ', 'S', 'I', 'G', ' ', 'G', 'E', 'N', ' ', 'A', '0', '.', '1', 'd', ' ', 0x0};
 char header2[HEADER2] = {' ', '(', 'C', ')', 'V', 'E', '3', 'O', 'O', 'I', 0x0};
+#define VERSION 0xA1D
+//#define VERSION 0
 
 char clkentry [CLKENTRYLEN];
 
@@ -152,10 +155,10 @@ void loop()
       GetRotaryNumber (-500, 500, 100, 11, 3);
 
     } else if (flags & MEMORY_SAVE_MODE) {
-      GetRotaryNumber (0, (MAX_MEMORIES-1), 1, 11, 3);
+      GetRotaryNumber (0, (int)(MAX_MEMORIES-1), 1, 11, 3);
 
     } else if (flags & MEMORY_RECALL_MODE) {
-      GetRotaryNumber (0, (MAX_MEMORIES-1), 1, 11, 3);
+      GetRotaryNumber (0, (int)(MAX_MEMORIES-1), 1, 11, 3);
     }
     
   } else {
@@ -177,12 +180,13 @@ void GetRotaryNumber (int lnum, int hnum, int maxinc, unsigned char x, unsigned 
 
   if (flags & ROTARY_CW) {
     rotaryNumber += rotaryInc;
-    if (rotaryNumber > hnum) rotaryNumber = hnum;
+    if (rotaryNumber > hnum) rotaryNumber = hnum; 
 
   } else if (flags & ROTARY_CCW) {
     rotaryNumber -= rotaryInc;
-    if (rotaryNumber < lnum) rotaryNumber = lnum;
+    if (rotaryNumber < lnum) rotaryNumber = lnum;     
   }
+  
 
   if ( (flags & ROTARY_CW) || (flags & ROTARY_CCW) ) {
     flags &= ~ROTARY_CW;
@@ -191,7 +195,7 @@ void GetRotaryNumber (int lnum, int hnum, int maxinc, unsigned char x, unsigned 
     if (flags & MEMORY_RECALL_MODE || flags & MEMORY_SAVE_MODE) {
       LCDDisplayNumber1D (rotaryNumber, x, y);
       LCDSelectLine (x, y, 1);
-      
+ 
     } else if (flags & CALIBRATION_MODE) {
       LCDDisplayNumber3D (rotaryNumber, x, y);
       LCDSelectLine (pos, y, 1);
@@ -237,13 +241,12 @@ void GetRotaryNumber (int lnum, int hnum, int maxinc, unsigned char x, unsigned 
         LCDErrorMsg(11, okmsg);
         delay (3000);
         LCDClearErrorMsg(10);
-        RefreshLCD();
       } else {
         LCDErrorMsg(11, (char *)"MEM ERR");
         delay (3000);
         LCDClearErrorMsg(10);
       }
-      flags &= ~DISABLE_BUTTONS;
+      RefreshLCD();
       flags &= ~MEMORY_RECALL_MODE;
       
     } else if (flags & CALIBRATION_MODE) {
@@ -254,21 +257,28 @@ void GetRotaryNumber (int lnum, int hnum, int maxinc, unsigned char x, unsigned 
       LCDErrorMsg(11, okmsg);
       delay (3000);
       LCDClearErrorMsg(11);
+      ResetSi5351();
+      RefreshLCD();
+      flags &= ~CALIBRATION_MODE;
     }
 
+    ClearFlags();
     LCDSelectLine(0, 3, 1);
     flags |= MENU_MODE;
     flags &= ~PBUTTON1_PUSHED;
+    digitalWrite(LED_BUILTIN, LOW);
   }
 
   if (flags & PBUTTON2_PUSHED) {
     ClearFlags();
     ResetSi5351();
+    RefreshLCD();
     LCDClearErrorMsg(11);
     LCDSelectLine(0, 3, 1);
 
     flags |= MENU_MODE;
     flags &= ~PBUTTON2_PUSHED;
+    digitalWrite(LED_BUILTIN, LOW);
   }
 
 }
@@ -338,6 +348,7 @@ void MenuClockFrequencyMode (void)
     pos = FrequencyDigitUpdate(frequency_inc) + FREQUENCY_DISPLAY_SHIFT;
     LCDSelectLine(pos, ClkSelection, 1);
     flags &= ~PBUTTON1_PUSHED;
+    digitalWrite(LED_BUILTIN, LOW);
   }
 
   if (flags & PBUTTON2_PUSHED) {
@@ -345,6 +356,7 @@ void MenuClockFrequencyMode (void)
     flags &= ~CLOCK_FREQUENCY_MODE;
     LCDSelectLine(0, ClkSelection, 1);
     flags &= ~PBUTTON2_PUSHED;
+    digitalWrite(LED_BUILTIN, LOW);
   }
 
 }
@@ -403,6 +415,7 @@ void MenuIQClockFrequencyMode (void)
     else ClkSelection = 0;
     LCDSelectLine(pos, ClkSelection, 1);
     flags &= ~PBUTTON1_PUSHED;
+    digitalWrite(LED_BUILTIN, LOW);
   }
 
   if (flags & PBUTTON2_PUSHED) {
@@ -410,6 +423,7 @@ void MenuIQClockFrequencyMode (void)
     flags |= MENU_MODE;
     LCDSelectLine(0, 3, 1);
     flags &= ~PBUTTON2_PUSHED;
+    digitalWrite(LED_BUILTIN, LOW);
   }
 
 }
@@ -469,6 +483,7 @@ void MenuClockFrequencyOffsetMode (void)
     pos += OFFSET_DISPLAY_SHIFT;
     LCDSelectLine (pos, ClkSelection, 1);
     flags &= ~PBUTTON1_PUSHED;
+    digitalWrite(LED_BUILTIN, LOW);
   }
 
   if (flags & PBUTTON2_PUSHED) {
@@ -476,6 +491,7 @@ void MenuClockFrequencyOffsetMode (void)
     flags |= MENU_MODE;
     LCDSelectLine(0, 3, 1);
     flags &= ~PBUTTON2_PUSHED;
+    digitalWrite(LED_BUILTIN, LOW);
   }
 
 }
@@ -504,17 +520,28 @@ void MenuClockWindowMode ()
 #ifdef ENABLE_SWAP_VFO
     // Swap CLK2 and CLK2
     if ( (ClkSelection == 0 || ClkSelection == 2) && sg.ClkStatus[0] && sg.ClkStatus[2]) {
+      // Swap frequency
       frequency_clk = sg.ClkFreq[0]; 
       sg.ClkFreq[0] = sg.ClkFreq[2]; 
-      sg.ClkFreq[2] = frequency_clk; 
-      LCDDisplayClockEntry(0);
-      LCDDisplayClockEntry(2);
+      sg.ClkFreq[2] = frequency_clk;
+      // Swap offset
+      offset_frequency = sg.ClkOffset[0]; 
+      sg.ClkOffset[0] = sg.ClkOffset[2]; 
+      sg.ClkOffset[2] = offset_frequency;
+      if (flags &  LO_FREQUENCY_MODE) {
+        LCDDisplayLOClockFrequency (0);
+        LCDDisplayLOClockFrequency (2);        
+      } else {
+        LCDDisplayClockEntry(0);
+        LCDDisplayClockEntry(2);
+      }
       UpdateFrequency (0);
       UpdateFrequency (2);      
       LCDSelectLine(0, ClkSelection, 1);
     }
 #endif // ENABLE_SWAP_VFO
 
+    digitalWrite(LED_BUILTIN, LOW);
     flags &= ~ROTARY_PUSH;
   }
 
@@ -534,6 +561,7 @@ void MenuClockWindowMode ()
       flags &= ~CLOCK_WINDOW_MODE;
       flags |= CLOCK_FREQUENCY_MODE;
     }
+    digitalWrite(LED_BUILTIN, LOW);
     flags &= ~PBUTTON1_PUSHED;
   }
 
@@ -543,6 +571,7 @@ void MenuClockWindowMode ()
     flags |= MENU_MODE;
     LCDSelectLine(0, 3, 1);
     flags &= ~PBUTTON2_PUSHED;
+    digitalWrite(LED_BUILTIN, LOW);
   }
 
 }
@@ -581,11 +610,13 @@ void MenuDisplayMode ()
   if (flags & PBUTTON1_PUSHED) {
     DoMenu();
     flags &= ~PBUTTON1_PUSHED;
+    digitalWrite(LED_BUILTIN, LOW);
   }
 
   if (flags & PBUTTON2_PUSHED) {
     DoMenu();
     flags &= ~PBUTTON2_PUSHED;
+    digitalWrite(LED_BUILTIN, LOW);
   }
 
 }
@@ -701,6 +732,7 @@ void DoMenu(void)
       break;
 
     case CALIBRATE:
+      ResetSi5351();
       SetMemClkStatus (1, 0);
       sg.ClkMode[0] = VFO_CLK_MODE;
       sg.ClkMode[1] = VFO_CLK_MODE;
@@ -732,6 +764,7 @@ void DoMenu(void)
     case SAVE:
       ResetSi5351();
       SetMemClkStatus (0, 0);
+      RefreshLCD();
       
       ClearFlags();
       flags |= MEMORY_SAVE_MODE;
@@ -745,6 +778,7 @@ void DoMenu(void)
     case RECALL:
       ResetSi5351();
       SetMemClkStatus (0, 0);
+      RefreshLCD();
       
       ClearFlags();
       flags |= MEMORY_RECALL_MODE;
@@ -786,15 +820,17 @@ void DoMenu(void)
 
 void ClearFlags ()
 {
-  flags &= ~MEMORY_RECALL_MODE;
-  flags &= ~MEMORY_SAVE_MODE;
-  flags &= ~CLOCK_WINDOW_MODE;
   flags &= ~MENU_MODE;
-  flags &= ~OFFSET_FREQUENCY_MODE;
+  flags &= ~CLOCK_WINDOW_MODE;
   flags &= ~CLOCK_FREQUENCY_MODE;
   flags &= ~LO_FREQUENCY_MODE;
   flags &= ~IQ_FREQUENCY_MODE;
+  flags &= ~OFFSET_FREQUENCY_MODE;
+  flags &= ~CALIBRATION_MODE;
+  flags &= ~MEMORY_SAVE_MODE;
+  flags &= ~MEMORY_RECALL_MODE;
   flags &= ~CLI_MODE;
+//  flags &= ~MASTER_RESET;       // This should never be cleared.
   
 }
 
@@ -994,17 +1030,17 @@ void Reset (void)
   EEPROM.get(0, mem);
   memcpy ((char *)&sg, (char *)&mem[0], sizeof(sg));
 
-  if (sg.flags != 0xFEEDFACE) {
-    sg.flags = 0xFEEDFACE;
+  if (sg.flags != 0xBEEFFACE) {
+    sg.flags = 0xFEEDFACE | VERSION;
     sg.ClkFreq[0] = 1000000;
-    sg.ClkFreq[1] = 100000000;
-    sg.ClkFreq[2] = 8000;
-    sg.IQClkFreq[0] = 5000000;
-    sg.IQClkFreq[1] = 5000000;
-    sg.IQClkFreq[2] = 5000000;
-    sg.ClkOffset[0] = 1000000;
-    sg.ClkOffset[1] = 100000000;
-    sg.ClkOffset[2] = 8000;
+    sg.ClkFreq[1] = 1000000;
+    sg.ClkFreq[2] = 1000000;
+    sg.IQClkFreq[0] = 1000000;
+    sg.IQClkFreq[1] = 0;
+    sg.IQClkFreq[2] = 1000000;
+    sg.ClkOffset[0] = 0;
+    sg.ClkOffset[1] = 0;
+    sg.ClkOffset[2] = 0;
     sg.ClkMode[0] = sg.ClkMode[1] = sg.ClkMode[2] = VFO_CLK_MODE;
     sg.ClkStatus[0] = sg.ClkStatus[1] = sg.ClkStatus[2] = 0;
     sg.correction = 0;
@@ -1065,21 +1101,21 @@ void ExecuteSerial (char *str)
     case 'C':             // Calibrate
       // First, Check inputs to validate
       if (numbers[0] == 0UL && numbers[1] == 0UL) {
-        Serial.print ("Correction: ");
+        Serial.print (F("Correction: "));
         Serial.println (sg.correction);
         break;
         
       } else if (numbers[0] > 500) {
-        Serial.println ("Bad Cal");
+        Serial.println (F("Bad Cal"));
         break;
         
       } else if (numbers[1] < SI_MIN_OUT_FREQ || numbers[1] > SI_MAX_OUT_FREQ) {
-        Serial.println ("Bad Freq");
+        Serial.println (F("Bad Freq"));
         break;
       }
 
       // New value defined so read the old values and display what will be done
-      Serial.print ("Old Correction: ");
+      Serial.print (F("Old Correction: "));
       Serial.println (sg.correction);
       Serial.print ("New Correction: ");
       
@@ -1101,12 +1137,12 @@ void ExecuteSerial (char *str)
     case 'F':             // Set Frequency
       // Validate inputs
       if (numbers [0] > 2UL) {
-        Serial.println ("Bad Clk");
+        Serial.println (F("Bad Clk"));
         break;
       }
 
       if (numbers[1] < SI_MIN_OUT_FREQ || numbers[1] > SI_MAX_OUT_FREQ) {
-        Serial.println ("Bad Freq");
+        Serial.println (F("Bad Freq"));
         break;
       }
 
@@ -1142,20 +1178,20 @@ void ExecuteSerial (char *str)
     // Phase controls
     case 'P':
       if (numbers[0] > 2UL){
-        Serial.println ("Bad CLK");
+        Serial.println (F("Bad CLK"));
         return;
       }
       clk = (unsigned char)numbers[0];
       
       if (numbers[1] > 128UL || numbers[1] <  4UL  ){
-        Serial.println ("Bad Phase");
+        Serial.println (F("Bad Phase"));
         return;
       }
       phase = (unsigned char)numbers[1];
 
-      Serial.print ("Clk: ");
+      Serial.print (F("Clk: "));
       Serial.print (clk);
-      Serial.print (" Phase: ");
+      Serial.print (F(" Phase: "));
       Serial.println (phase);
 
       UpdatePhaseRegister (clk, phase);     
@@ -1163,7 +1199,7 @@ void ExecuteSerial (char *str)
 
     case 'Q':             // Reset
       if (numbers[0] < SI_MIN_IQ_OUT_FREQ || numbers[1] > SI_MAX_IQ_OUT_FREQ) {
-        Serial.println ("Bad Freq");
+        Serial.println (F("Bad Freq"));
         break;
       }
               
