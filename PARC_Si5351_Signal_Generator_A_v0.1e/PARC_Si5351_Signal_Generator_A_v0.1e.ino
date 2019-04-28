@@ -68,10 +68,8 @@ char RootMenuOptions[MAXMENU_ITEMS][MAXMENU_LEN] = {
   {"RESET     "}
 };
 
-char header1[HEADER1] = {'P', 'A', 'R', 'C', ' ', 'S', 'I', 'G', ' ', 'G', 'E', 'N', ' ', 'A', '0', '.', '1', 'd', ' ', 0x0};
+char header1[HEADER1] = {'P', 'A', 'R', 'C', ' ', 'S', 'I', 'G', ' ', 'G', 'E', 'N', ' ', 'A', '0', '.', '1', 'e', ' ', 0x0};
 char header2[HEADER2] = {' ', '(', 'C', ')', 'V', 'E', '3', 'O', 'O', 'I', 0x0};
-#define VERSION 0xA1D
-//#define VERSION 0
 
 char clkentry [CLKENTRYLEN];
 
@@ -320,7 +318,13 @@ void MenuClockFrequencyMode (void)
   if ( (flags & ROTARY_CW) || (flags & ROTARY_CCW) ) {
     flags &= ~ROTARY_CW;
     flags &= ~ROTARY_CCW;
-    LCDDisplayLOClockFrequency (ClkSelection);
+
+    if (flags & LO_FREQUENCY_MODE ) {
+      LCDDisplayLOClockFrequency (ClkSelection); 
+    } else  {
+      LCDDisplayClockFrequency  (ClkSelection);  
+    }
+    
     UpdateFrequency (ClkSelection);
     LCDSelectLine (pos, ClkSelection, 1);
     digitalWrite(LED_BUILTIN, LOW);
@@ -1030,8 +1034,8 @@ void Reset (void)
   EEPROM.get(0, mem);
   memcpy ((char *)&sg, (char *)&mem[0], sizeof(sg));
 
-  if (sg.flags != 0xBEEFFACE) {
-    sg.flags = 0xFEEDFACE | VERSION;
+  if (sg.flags != (MEM_ID | VERSION)) {
+    sg.flags = (MEM_ID | VERSION);
     sg.ClkFreq[0] = 1000000;
     sg.ClkFreq[1] = 1000000;
     sg.ClkFreq[2] = 1000000;
@@ -1225,7 +1229,7 @@ void printMem (unsigned char i)
 {
   EEPROM.get(0, mem);
   memset(rbuff,0,sizeof(rbuff));
-  if (mem[i].flags == 0xFEEDFACE) {
+  if (mem[i].flags == (MEM_ID | VERSION)) {
     sprintf (rbuff, "Mem: %d Corr: %d", i, mem[i].correction);
     Serial.println (rbuff);
     sprintf (rbuff, "\tVFO1: %ld VFO2: %ld VFO3: %ld", mem[i].ClkFreq[0], mem[i].ClkFreq[1], mem[i].ClkFreq[2]);
