@@ -1,7 +1,7 @@
 #ifndef _MAIN_H_
 #define _MAIN_H_
 
-//#define REMOVE_CLI
+#define REMOVE_CLI
 #define ENABLE_SWAP_VFO
 
 #define MEM_ID 0xFEEFFACE
