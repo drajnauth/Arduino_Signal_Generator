@@ -1052,8 +1052,6 @@ void Reset (void)
     EEPROM.put(0, mem);
   }
 
-  Serial.println (sg.correction);
-
   rotaryNumber = 0;
   rotaryInc = 1;
 
